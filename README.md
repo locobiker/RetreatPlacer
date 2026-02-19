@@ -7,6 +7,8 @@ Built on [Google OR-Tools CP-SAT](https://developers.google.com/optimization/cp/
 ## Quick Start
 
 ```bash
+Copy template files from Templates directory
+Change File names and insert your data
 pip install ortools openpyxl pandas
 python RetreatPlacer.py RoomMap.xlsx PeopleToPlace.xlsx FilledRoomMap.xlsx
 ```
