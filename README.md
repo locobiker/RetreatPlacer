@@ -6,6 +6,17 @@ Built on [Google OR-Tools CP-SAT](https://developers.google.com/optimization/cp/
 
 ## Quick Start
 
+### Desktop UI (recommended)
+
+Place `RetreatPlacerUI.py` alongside `RetreatPlacer.py`, then:
+
+```bash
+pip install customtkinter ortools openpyxl pandas
+python RetreatPlacerUI.py
+```
+
+### Command Line
+
 ```bash
 pip install ortools openpyxl pandas
 python RetreatPlacer.py RoomMap.xlsx PeopleToPlace.xlsx FilledRoomMap.xlsx
@@ -17,6 +28,124 @@ Or generate sample data to try it out:
 python RetreatPlacer.py --generate-sample
 python RetreatPlacer.py
 ```
+
+---
+
+## Desktop UI
+
+`RetreatPlacerUI.py` is a cross-platform desktop application built with [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter). It provides a visual interface for the full workflow: loading files, running the solver, reviewing results, making manual adjustments, and saving the output.
+
+### UI Tabs
+
+#### Files Tab
+
+Select your input and output files using the native file browser. As soon as files are selected, a summary panel shows building count, bed capacity, org/group breakdown, and constraint counts (floor 1 needs, bottom bunk needs, attachments).
+
+#### Run Solver Tab
+
+Click **Run Solver** to start the OR-Tools CP-SAT solver. The UI automatically switches to the Console Log tab so you can watch progress. The solver runs in a background thread — the UI stays responsive throughout. A configuration panel shows the current solver weights and settings for reference.
+
+#### Console Log Tab
+
+Live output from the solver appears here, including attach-name resolution, solver progress, and the final debug report. While the solver is running, an animated indicator at the top shows a spinner and elapsed timer. When the solver finishes, the indicator turns green and the UI automatically navigates to the Results tab after a short delay.
+
+#### Results Tab
+
+Displays the placement results in a visual layout organized by building and room.
+
+**Summary cards** at the top show total placed, unplaced, buildings used, and rooms used.
+
+**Building cards** show each building with its rooms laid out in a grid. Each room card displays:
+
+- Room name and occupancy (e.g., `7/10`)
+- Filled bunk slots showing the person's name and org
+  - **Colored names** (matching the building accent color) with a `▾` indicator = **bottom bunk**
+  - **Gray names** with a `▴` indicator = **top bunk**
+- Empty bunk slots shown as `── empty ──`
+
+**Unplaced section** appears below the buildings if anyone couldn't be placed, with diagnostic reasons for each person.
+
+**Manual adjustments** — You can move people between rooms after the solver runs:
+
+1. Click any person's name to select them (highlights in yellow)
+2. All empty slots change to `┄┄ drop here ┄┄`
+3. Click an empty slot to move the person there
+4. Click the **Deselect** button or another person to change your selection
+5. Unplaced people can also be clicked and placed into empty slots
+
+**Save button** — At the bottom of the Results tab, the **Save Changes to Output File** button writes your manual adjustments back to the xlsx. It is grayed out until you make changes, then turns green. An "Unsaved changes" indicator also appears in the header.
+
+Additional buttons let you open the output file directly or open the containing folder.
+
+---
+
+## Distributing to End Users
+
+There are two ways to distribute RetreatPlacer to people who don't have Python installed.
+
+### Option A: Standalone App (PyInstaller)
+
+Bundle everything into a single executable. Users double-click and go — no Python install needed.
+
+**You must build on each platform** (Windows exe on Windows, macOS app on macOS).
+
+#### Setup (both platforms)
+
+```bash
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# macOS:   source .venv/bin/activate
+pip install -r requirements.txt
+pip install pyinstaller
+```
+
+#### Build on Windows
+
+```
+build_windows.bat
+```
+
+Output: `dist/RetreatPlacer.exe`
+
+Users may see a SmartScreen warning on first run — click "More info" → "Run anyway". To avoid this, code-sign the exe with a certificate (~$200-400/yr).
+
+#### Build on macOS
+
+```bash
+chmod +x build_macos.sh
+./build_macos.sh
+```
+
+Output: `dist/RetreatPlacer.app` (also creates a distributable zip)
+
+Users may need to right-click → Open on first launch (Gatekeeper). To remove this, notarize with an Apple Developer account ($99/yr). If users see "App is damaged", they can run `xattr -cr /path/to/RetreatPlacer.app` in Terminal.
+
+**Apple Silicon vs Intel:** Build on the same chip architecture your users have.
+
+### Option B: Install Scripts (lightweight, requires internet)
+
+Give users the project folder. They double-click one file:
+
+- **Windows:** `install_windows.bat` — checks for Python (opens the download page if missing), creates a hidden virtual environment, installs packages, and launches the app. First run takes 2-3 minutes; subsequent runs start in seconds.
+
+- **macOS:** `install_macos.command` — same flow, double-clickable from Finder.
+
+This approach has a much smaller download size but requires an internet connection on first run.
+
+### Project Files for Distribution
+
+```
+RetreatPlacer/
+├── RetreatPlacer.py          # solver engine
+├── RetreatPlacerUI.py         # desktop UI
+├── requirements.txt           # pip dependencies
+├── build_windows.bat          # PyInstaller build script (Windows)
+├── build_macos.sh             # PyInstaller build script (macOS)
+├── install_windows.bat        # one-click install+run (Windows)
+└── install_macos.command      # one-click install+run (macOS)
+```
+
+---
 
 ## Input Files
 
@@ -79,6 +208,8 @@ Details on every non-exact AttachName resolution: fuzzy matches, rejected matche
 
 Placement counts, org-by-building distribution, and overall statistics.
 
+---
+
 ## How It Works
 
 ### Constraint Model
@@ -138,14 +269,41 @@ GroupName and OrgName are normalized to a canonical form (first occurrence wins)
 
 Before solving, RetreatPlacer pre-computes which buildings each org should ideally use via greedy bin-packing (largest orgs first → fewest buildings). This gives the solver a strong directional signal that scales with org size.
 
+---
+
 ## Solver Details
 
 - **Engine:** Google OR-Tools CP-SAT
-- **Time limit:** 300 seconds (configurable in code)
+- **Time limit:** 600 seconds (configurable in code)
 - **Workers:** 8 parallel search threads
 - **Model type:** Room-level assignment with per-room capacity constraints
 
 The solver reports whether the solution is OPTIMAL (proven best) or FEASIBLE (good solution found within time limit).
+
+## Requirements
+
+- Python 3.10+
+- [ortools](https://pypi.org/project/ortools/) — Google OR-Tools constraint solver
+- [openpyxl](https://pypi.org/project/openpyxl/) — Excel file creation
+- [pandas](https://pypi.org/project/pandas/) — Excel file reading
+- [customtkinter](https://github.com/TomSchimansky/CustomTkinter) — Desktop UI (only needed for `RetreatPlacerUI.py`)
+
+```bash
+pip install ortools openpyxl pandas customtkinter
+```
+
+## Command Line Usage
+
+```bash
+# Basic usage
+python RetreatPlacer.py RoomMap.xlsx PeopleToPlace.xlsx FilledRoomMap.xlsx
+
+# Default filenames (if you name your files exactly as above)
+python RetreatPlacer.py
+
+# Generate sample data for testing
+python RetreatPlacer.py --generate-sample
+```
 
 ## Template Files
 
@@ -158,29 +316,7 @@ The `templates/` directory contains starter spreadsheets with:
 
 **Important:** Delete row 2 (the description row) before running the script, or copy only the header row and your data.
 
-## Requirements
-
-- Python 3.8+
-- [ortools](https://pypi.org/project/ortools/) — Google OR-Tools constraint solver
-- [openpyxl](https://pypi.org/project/openpyxl/) — Excel file creation
-- [pandas](https://pypi.org/project/pandas/) — Excel file reading
-
-```bash
-pip install ortools openpyxl pandas
-```
-
-## Usage
-
-```bash
-# Basic usage
-python RetreatPlacer.py RoomMap.xlsx PeopleToPlace.xlsx FilledRoomMap.xlsx
-
-# Default filenames (if you name your files exactly as above)
-python RetreatPlacer.py
-
-# Generate sample data for testing
-python RetreatPlacer.py --generate-sample
-```
+---
 
 ## Troubleshooting
 
@@ -195,6 +331,18 @@ Check the AttachWarnings sheet. If a fuzzy match is incorrect, fix the spelling 
 
 **Solver takes too long:**
 The room-level model handles 200+ people well within 5 minutes. For 500+ people, consider increasing the time limit or reducing the number of soft constraints.
+
+**UI won't launch:**
+Make sure `RetreatPlacerUI.py` is in the same folder as `RetreatPlacer.py`. The UI imports the solver as a Python module. If CustomTkinter isn't installed, run `pip install customtkinter`.
+
+**"Solver Not Found" error in the UI:**
+The UI looks for `RetreatPlacer.py` in the same directory. Verify both files are side by side.
+
+**Windows SmartScreen blocks the standalone exe:**
+Click "More info" → "Run anyway". This is a known issue with PyInstaller-built executables that aren't code-signed.
+
+**macOS "App is damaged" or "cannot be verified":**
+Right-click the app → Open (first time only). If that doesn't work, run `xattr -cr /path/to/RetreatPlacer.app` in Terminal.
 
 ## License
 

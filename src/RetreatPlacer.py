@@ -1056,6 +1056,17 @@ def main():
     print(f"People    : {people_file}")
     print(f"Output    : {output_file}")
 
+    # Pre-check: delete existing output file (catches Windows file-lock early)
+    import os
+    if os.path.exists(output_file):
+        try:
+            os.remove(output_file)
+            print(f"  (removed existing {output_file})")
+        except PermissionError:
+            print(f"\nERROR: Cannot write to '{output_file}' — is it open in Excel?")
+            print("Close the file and try again.")
+            sys.exit(1)
+
     rooms_df, people_df = load_data(room_file, people_file)
     slots, _ = build_slots(rooms_df)
 
