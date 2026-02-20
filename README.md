@@ -21,6 +21,8 @@ Or use the one-click install script (handles Python setup automatically):
 ### Command Line
 
 ```bash
+Copy template files from Templates directory
+Change File names and insert your data
 pip install ortools openpyxl pandas
 python src/RetreatPlacer.py RoomMap.xlsx PeopleToPlace.xlsx FilledRoomMap.xlsx
 ```
@@ -266,8 +268,8 @@ AttachName is the most nuanced feature. Here's how it works:
 
 Real-world spreadsheets have typos, nicknames, and inconsistent formatting. RetreatPlacer resolves AttachName values through a 5-step cascade:
 
-1. **Exact match** (case-insensitive): "Jessica Ritchie" → Jessica Ritchie
-2. **Nickname expansion**: "Jess Ritchie" → Jessica Ritchie (supports ~20 common nicknames)
+1. **Exact match** (case-insensitive): "Michael Smith" → Michael Smith
+2. **Nickname expansion**: "Mike Smith" → Michael Smith (supports ~20 common nicknames)
 3. **Last-name match** with first-name plausibility check and org/group affinity tiebreaking
 4. **First-name-only match**: "Heather" → picks the Heather in the same org
 5. **Fuzzy matching** (SequenceMatcher) with org/group affinity boost: same-org candidates get a 0.15 bonus per affinity point
