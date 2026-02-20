@@ -8,25 +8,28 @@ Built on [Google OR-Tools CP-SAT](https://developers.google.com/optimization/cp/
 
 ### Desktop UI (recommended)
 
-Place `RetreatPlacerUI.py` alongside `RetreatPlacer.py`, then:
-
 ```bash
 pip install customtkinter ortools openpyxl pandas
-python RetreatPlacerUI.py
+python src/RetreatPlacerUI.py
 ```
+
+Or use the one-click install script (handles Python setup automatically):
+
+- **Windows:** Double-click `build/install_windows.bat`
+- **macOS:** Double-click `build/install_macos.command`
 
 ### Command Line
 
 ```bash
 pip install ortools openpyxl pandas
-python RetreatPlacer.py RoomMap.xlsx PeopleToPlace.xlsx FilledRoomMap.xlsx
+python src/RetreatPlacer.py RoomMap.xlsx PeopleToPlace.xlsx FilledRoomMap.xlsx
 ```
 
 Or generate sample data to try it out:
 
 ```bash
-python RetreatPlacer.py --generate-sample
-python RetreatPlacer.py
+python src/RetreatPlacer.py --generate-sample
+python src/RetreatPlacer.py
 ```
 
 ---
@@ -92,9 +95,10 @@ Bundle everything into a single executable. Users double-click and go — no Pyt
 #### Setup (both platforms)
 
 ```bash
-python -m venv .venv
-# Windows: .venv\Scripts\activate
-# macOS:   source .venv/bin/activate
+cd build
+python -m venv ../.build_venv
+# Windows: ..\.build_venv\Scripts\activate
+# macOS:   source ../.build_venv/bin/activate
 pip install -r requirements.txt
 pip install pyinstaller
 ```
@@ -102,6 +106,7 @@ pip install pyinstaller
 #### Build on Windows
 
 ```
+cd build
 build_windows.bat
 ```
 
@@ -112,6 +117,7 @@ Users may see a SmartScreen warning on first run — click "More info" → "Run 
 #### Build on macOS
 
 ```bash
+cd build
 chmod +x build_macos.sh
 ./build_macos.sh
 ```
@@ -126,23 +132,30 @@ Users may need to right-click → Open on first launch (Gatekeeper). To remove t
 
 Give users the project folder. They double-click one file:
 
-- **Windows:** `install_windows.bat` — checks for Python (opens the download page if missing), creates a hidden virtual environment, installs packages, and launches the app. First run takes 2-3 minutes; subsequent runs start in seconds.
+- **Windows:** `build/install_windows.bat` — checks for Python (opens the download page if missing), creates a hidden virtual environment, installs packages, and launches the app. First run takes 2-3 minutes; subsequent runs start in seconds.
 
-- **macOS:** `install_macos.command` — same flow, double-clickable from Finder.
+- **macOS:** `build/install_macos.command` — same flow, double-clickable from Finder.
 
 This approach has a much smaller download size but requires an internet connection on first run.
 
-### Project Files for Distribution
+### Project Structure
 
 ```
 RetreatPlacer/
-├── RetreatPlacer.py          # solver engine
-├── RetreatPlacerUI.py         # desktop UI
-├── requirements.txt           # pip dependencies
-├── build_windows.bat          # PyInstaller build script (Windows)
-├── build_macos.sh             # PyInstaller build script (macOS)
-├── install_windows.bat        # one-click install+run (Windows)
-└── install_macos.command      # one-click install+run (macOS)
+├── src/
+│   ├── RetreatPlacer.py           # solver engine
+│   └── RetreatPlacerUI.py         # desktop UI
+├── build/
+│   ├── build_windows.bat          # PyInstaller build (Windows)
+│   ├── build_macos.sh             # PyInstaller build (macOS)
+│   ├── install_windows.bat        # one-click install+run (Windows)
+│   ├── install_macos.command      # one-click install+run (macOS)
+│   └── requirements.txt           # pip dependencies
+├── Templates/
+│   ├── RoomMap_Template.xlsx      # blank room map template
+│   └── PeopleToPlace_Template.xlsx # blank people template
+├── dist/                          # compiled output (generated)
+└── README.md
 ```
 
 ---
@@ -296,13 +309,13 @@ pip install ortools openpyxl pandas customtkinter
 
 ```bash
 # Basic usage
-python RetreatPlacer.py RoomMap.xlsx PeopleToPlace.xlsx FilledRoomMap.xlsx
+python src/RetreatPlacer.py RoomMap.xlsx PeopleToPlace.xlsx FilledRoomMap.xlsx
 
 # Default filenames (if you name your files exactly as above)
-python RetreatPlacer.py
+python src/RetreatPlacer.py
 
 # Generate sample data for testing
-python RetreatPlacer.py --generate-sample
+python src/RetreatPlacer.py --generate-sample
 ```
 
 ## Template Files
@@ -333,10 +346,10 @@ Check the AttachWarnings sheet. If a fuzzy match is incorrect, fix the spelling 
 The room-level model handles 200+ people well within 5 minutes. For 500+ people, consider increasing the time limit or reducing the number of soft constraints.
 
 **UI won't launch:**
-Make sure `RetreatPlacerUI.py` is in the same folder as `RetreatPlacer.py`. The UI imports the solver as a Python module. If CustomTkinter isn't installed, run `pip install customtkinter`.
+Make sure `RetreatPlacerUI.py` and `RetreatPlacer.py` are both in the `src/` directory. The UI imports the solver as a Python module from the same folder. If CustomTkinter isn't installed, run `pip install customtkinter`.
 
 **"Solver Not Found" error in the UI:**
-The UI looks for `RetreatPlacer.py` in the same directory. Verify both files are side by side.
+The UI looks for `RetreatPlacer.py` in the same directory as `RetreatPlacerUI.py` (i.e., `src/`). Verify both files are side by side in `src/`.
 
 **Windows SmartScreen blocks the standalone exe:**
 Click "More info" → "Run anyway". This is a known issue with PyInstaller-built executables that aren't code-signed.
